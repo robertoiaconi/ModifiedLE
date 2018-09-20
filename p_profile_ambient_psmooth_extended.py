@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from read_mesa import read_mesa
 from utils import smooth, find_nearest, phantom, ohlmann
+from scipy.integrate import cumtrapz, RK45
 
 
 #Calculate cutoff radius:
@@ -92,6 +93,10 @@ axes[0,0].set_yscale('log')
 axes[0,0].set_xlabel('log$_{10}(r)$')
 axes[0,0].set_ylabel('log$_{10}(\\rho)$')
 
+rprofile    = np.concatenate((r_MLE, r[ic:]))
+rhoprofile  = np.concatenate((rho_MLE, rho[ic:]))
+
+
 ### Mass profile ###
 
 # Integrate dm/dr equation from r=0 to get m(r) (serves as a check of the direct MESA output)
@@ -112,16 +117,24 @@ for i, xii in enumerate(xi[1:], 1):
     dxi= xii - xi[i-1]
     mMLE.append(mMLE[i-1] + 4. * np.pi * dxi * alpha**3 * rho0 * (theta[i]**nnn * xii**2 + theta[i-1]**nnn * xi[i-1]**2) / 2.)
 
+#mprofile = [0.]
+#for i, ri in enumerate(rprofile[1:], 1):
+#    dr = ri - rprofile[i-1]
+#    mprofile.append(mprofile[i-1] + 4. * np.pi * dr * (rhoprofile[i] * ri**2 + rhoprofile[i-1] * rprofile[i-1]**2) / 2.)
+
+#mprofile = cumtrapz(4. * np.pi * rhoprofile * rprofile**2, rprofile, initial=0.)
+
 # Now integrate dm/dr equation from MLE solution from r=h with initial condition m(h) = m_c = m_MESA(h) to get m(r) profile
 mnew = [mh]
 for i, xii in reversed(list(enumerate(xi))[:-1]):
     dxi = xii - xi[i+1]
     mnew.insert(0, mnew[0] + dxi * 4. * np.pi * alpha**3 * rho0 * (theta[i]**nnn * xii**2 + theta[i+1]**nnn * xi[i+1]**2) / 2.)
 
+
 mMLE = np.array(mMLE)
 mnew = np.array(mnew)
 
-print mc, mc + mMLE[-1], mh, (mc + mMLE[-1]) / mh 
+print mc/g_Msun, (mc + mMLE[-1])/g_Msun, mh/g_Msun, (mc + mMLE[-1]) / mh 
 
 axes[0,2].plot(r, m)
 axes[0,2].plot(r_MLE, mc + mMLE)
@@ -228,7 +241,7 @@ axes[1,1].set_ylabel('log$_{10}(dP/dr)$')
 
 rprofile    = np.flip(np.concatenate((r_MLE, r[ic:])),0)
 rhoprofile  = np.flip(np.concatenate((rho_MLE, rho[ic:])),0)
-mprofile    = np.flip(np.concatenate((mnew, m[ic:])),0)
+mprofile    = np.flip(np.concatenate((mnew, m[ic:])) - mc,0)
 presprofile = np.flip(np.concatenate((pnew, p[ic:])),0)
 tempprofile = np.flip(np.zeros(len(rprofile)),0)
 eniprofile  = presprofile / (0.67 * rhoprofile)

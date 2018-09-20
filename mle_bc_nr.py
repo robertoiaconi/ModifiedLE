@@ -1,4 +1,5 @@
-
+import os
+import sys
 import numpy as np
 from utils import phantom, ohlmann
 
@@ -16,16 +17,20 @@ irho0max  = 100000 #max iterations to find rho0 to match BCs
 eps_alpha = 0.001  #sets tolerance of convergence condition on alpha--smaller eps is more precise
 eps2      = 0.0005 #sets fractional change in alpha after each iteration
 eps_rho0  = 0.001  #sets tolerance of convergence condition on rho0--smaller eps is more precise
-dt        = 2.e-5  #0.0001
+dt        = 2.e-4  #iteration dt
+p_dt      = 2.e-4  #profile dt
 tmin      = 1.e-10 #must start at finite value to avoid singularity
 
 # Initialise bc file
 bc_file = 'bc.out'
+output_file = "out/mle_profile.out"
+if not os.path.exists(os.path.dirname(output_file)):
+    os.makedirs(os.path.dirname(output_file))
 
 # Initialise physical parameters
 nnn          = 3     #polytropic index
-alpha_init   = 5.87    #radius parameter
-rho0_init    = 0.000514 #central density, units g/cm^3
+alpha_init   = 10.   #radius parameter
+rho0_init    = 0.0005 #central density, units g/cm^3
 m_c_over_m_h = 0.9446325
 
 # Set the desired kernel
@@ -63,7 +68,7 @@ def pde(t, f, alpha, xi_h, nnn, rhobar, rho0):
     return dfdt
 
 
-def rk3(t, f, counter, alpha, xi_h, nnn, rhobar, rho0): # Exact copy of third order RK integrator from fortran version
+def rk3(t, dt, f, counter, alpha, xi_h, nnn, rhobar, rho0): # Exact copy of third order RK integrator from fortran version
     #gam1, gam2 AND gam3 ARE THE COEFFICIENTS OF THE TIMESTEPS AT WHICH dfdt IS CALCULATED
     gam1 = 8./15. 
     gam2 = 5./12.
@@ -99,18 +104,16 @@ def init_start(rho0, alpha):
     t       = tmin   #initial value of t
     counter = 1      #counts RK calls
 
-    f = np.array([1., 0.])
+    f = np.array([1., 0.]) #Initial conditions for integration
 
-    print 'rho0  = ', rho0
-    print 'alpha = ', alpha
 
     return t, f, counter
 
 
-def eval_rk(t, f, counter, alpha, xi_h, rhobar, rho0):
+def write_rk(t, dt, f, counter, alpha, xi_h, rhobar, rho0):
     with open('out/mle_profile.out', 'w+') as open_file:
         for i in range(Nmax):
-            t, f, counter = rk3(t, f, counter, alpha, xi_h, nnn, rhobar, rho0)
+            t, f, counter = rk3(t, dt, f, counter, alpha, xi_h, nnn, rhobar, rho0)
             if np.isnan(f[0]):
                 print 'NaNs detected, change the time step'
                 exit()
@@ -132,54 +135,54 @@ def eval_rk(t, f, counter, alpha, xi_h, rhobar, rho0):
                 return t, f, counter
 
 
-def check_alpha_satisfied(theta, dthetadxi, nnn, alpha, rho_h, drhodr_h):
-    F1 = theta / dthetadxi
-    F2 = nnn * rho_h / (alpha * drhodr_h)
-    print F1, F2
+def rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha):
+    t, f, counter = init_start(rho0, alpha)
+    xi, theta, eta = np.array([t]), np.array([f[0]]), np.array([f[1]])
+    for i in range(Nmax):
+        t, f, counter = rk3(t, dt, f, counter, alpha, xi_h, nnn, rhobar, rho0)
 
-    alpha_comp = abs((F2 - F1) / F2)
-    alpha_okay = alpha_comp < eps_alpha
-    alpha_sign = (F2 - F1) / abs(F2 - F1)
+        xi    = np.append(xi,t)
+        theta = np.append(theta,f[0])
+        eta   = np.append(eta,f[1])
 
-    return alpha_comp, alpha_okay, alpha_sign, F1, F2
-
-
-def check_rho0_satisfied(theta, dthetadxi, nnn, rho0, rho_h, drhodr_h):
-    F1 = rho0 * theta**nnn
-    F2 = rho_h
-
-    rho0_comp = abs((F2 - F1) / F2)
-    rho0_okay = rho0_comp < eps_rho0
-    rho0_sign = (F2 - F1) / abs(F2 - F1)
-
-    return rho0_comp, rho0_okay, rho0_sign, F1, F2
-
-def find_alpha(xi_h, alpha, rhobar, rho0, rho_h, drhodr_h, rcut):
-    for i in range(ialphamax):
-        if i == ialphamax:
-            print 'Reached max number of alpha iterations without converging'
+        if np.isnan(f[0]):
+            print 'NaNs detected, change the time step'
             exit()
-        t, f, counter = init_start(rho0, alpha)
-        t, f, counter = eval_rk(t, f, counter, alpha, xi_h, rhobar, rho0)
-        xi        = t
-        theta     = f[0]
-        eta       = f[1]
-        dthetadxi = -eta / xi**2
 
-        alpha_comp, alpha_okay, alpha_sign, F1, F2 = check_alpha_satisfied(theta, dthetadxi, nnn, alpha, rho_h, drhodr_h)
-
-        if alpha_okay:
-            print ''
-            print '******FOUND BC MATCH at ialpha=',i,'******'
+        if f[0] <= 0:
+            print 'reached negative theta at it = ', i
+            print 'xi = ', t
+            exit()
+        elif xi[-1] >= xi_h:
             break
-        elif alpha_sign == 1:  #assign new value to alpha
-            alpha = alpha - alpha * eps2 * abs(F2 / F1)
-        else:
-            alpha = alpha + alpha * eps2 * abs(F2 / F1)
 
-        xi_h = rcut / alpha  #assign new value to xi_h to reflect new value of alpha
-        
-    return alpha, xi_h, theta, dthetadxi, xi
+    r = alpha * xi
+    ircut = (np.abs(r-rcut)).argmin()
+    rho = rho0 * theta[ircut]**nnn
+    rhop = rho0 * theta[ircut-1]**nnn
+    drhodr = (rho - rhop) / (r[ircut] - r[ircut-1])  #This could probably be improved
+    return rho, drhodr
+
+def drhodalpha(rcut, rhobar, nnn, rho0, alpha, xi_h):
+    h_alpha = np.sqrt(sys.float_info.epsilon) * alpha
+    rhon2, drhon2 = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha-2*h_alpha)
+    rhon1, drhon1 = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha-h_alpha)
+    rhop1, drhop1 = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha+h_alpha)
+    rhop2, drhop2 = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha+2*h_alpha)
+    drho = (rhon2 - 8.*rhon1 + 8.*rhop1 - rhop2) / (12.*h_alpha)
+    ddrho = (drhon2 - 8.*drhon1 + 8.*drhop1 - drhop2) / (12.*h_alpha)
+    return drho, ddrho
+
+def drhodrho0(rcut, rhobar, nnn, rho0, alpha, xi_h):
+    h_rho0 = np.sqrt(sys.float_info.epsilon) * rho0
+    rhon2, drhon2 = rhocut(rcut, rhobar, nnn, xi_h, rho0-2*h_rho0, alpha)
+    rhon1, drhon1 = rhocut(rcut, rhobar, nnn, xi_h, rho0-h_rho0, alpha)
+    rhop1, drhop1 = rhocut(rcut, rhobar, nnn, xi_h, rho0+h_rho0, alpha)
+    rhop2, drhop2 = rhocut(rcut, rhobar, nnn, xi_h, rho0+2*h_rho0, alpha)
+    drho = (rhon2 - 8.*rhon1 + 8.*rhop1 - rhop2) / (12.*h_rho0)
+    ddrho = (drhon2 - 8.*drhon1 + 8.*drhop1 - drhop2) / (12.*h_rho0)
+    return drho, ddrho
+
 
 def mle_run(kernel):
     alpha = alpha_init
@@ -187,18 +190,38 @@ def mle_run(kernel):
     rcut, h, m_h, rho_h, drhodr_h, m_c, rhobar, xi_h = set_bc(bc_file, alpha)
 
     kernel.set_hsoft(h)
+    J = np.array([[0.,0.],[0.,0.]])
+    for i in xrange(100):
+        xi_h = rcut / alpha
+        J[0][0], J[1][0] = drhodalpha(rcut, rhobar, nnn, rho0, alpha, xi_h)
+        J[0][1], J[1][1] = drhodrho0(rcut, rhobar, nnn, rho0, alpha, xi_h)
+        J = np.linalg.inv(J)
+        rho, drhodr = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha)
+        alpha = alpha - np.dot(J, [rho - rho_h, drhodr - drhodr_h])[0]
+        rho0 = rho0 - np.dot(J, [rho - rho_h, drhodr - drhodr_h])[1]
+        rho_check = abs((rho_h-rho) / rho)
+        drhodr_check = abs((drhodr_h - drhodr) / drhodr)
+        print '\n##### Iteration {} #####'.format(i)
+        print 'alpha = {}'.format(alpha)
+        print 'rho0  = {}'.format(rho0)
+        print 'Desired cut values : rho = {}, drhodr = {}'.format(rho_h, drhodr_h)
+        print 'MLE cut values     : rho = {}, drhodr = {}'.format(rho, drhodr)
+        print 'Cut rho difference    = {}'.format(rho_check)
+        print 'Cut drhodr difference = {}'.format(drhodr_check)
 
-    for i in range(irho0max):
-        alpha, xi_h, theta, dthetadxi, xi = find_alpha(xi_h, alpha, rhobar, rho0, rho_h, drhodr_h, rcut)
-        rho0_comp, rho0_okay, rho0_sign, F1, F2 = check_rho0_satisfied(theta, dthetadxi, nnn, rho0, rho_h, drhodr_h)
-
-        if rho0_okay:
-            print '******FOUND BC MATCH FOR BOTH ALPHA AND RHO0*******'
-            rho0 = rho_h / theta**nnn  #set rho0 to value that is consistent with new alpha and break loop
+        if (rho_check < 1e-9 and drhodr_check < 1e-9):
+            print 'Solution found'
             break
-        else:
-            print '******RHO0 NOT CONVERGED--SET RHO0 = RHO_H/THETA**NNN AND TRY AGAIN******'
-            rho0 = rho_h / theta**nnn  #set rho0 to value that is consistent with new alpha and try again
+
+    t, f, counter = init_start(rho0, alpha)
+    t, f, counter = write_rk(t, p_dt, f, counter, alpha, xi_h, rhobar, rho0)
+
+    xi        = t
+    theta     = f[0]
+    eta       = f[1]
+    dthetadxi = -eta / xi**2
+
+    print theta
 
     print 'rho0             = ', rho0
     print 'rho_h/theta**nnn = ', rho_h / theta**nnn
