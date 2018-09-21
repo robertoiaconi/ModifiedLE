@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from read_mesa import read_mesa
 from utils import smooth, find_nearest, phantom, ohlmann
-from scipy.integrate import cumtrapz, RK45
+from scipy.integrate import cumtrapz
 
 
 #Calculate cutoff radius:
@@ -93,10 +93,6 @@ axes[0,0].set_yscale('log')
 axes[0,0].set_xlabel('log$_{10}(r)$')
 axes[0,0].set_ylabel('log$_{10}(\\rho)$')
 
-rprofile    = np.concatenate((r_MLE, r[ic:]))
-rhoprofile  = np.concatenate((rho_MLE, rho[ic:]))
-
-
 ### Mass profile ###
 
 # Integrate dm/dr equation from r=0 to get m(r) (serves as a check of the direct MESA output)
@@ -112,17 +108,7 @@ mmmh=mmm[ic]    # mass at transition radius
 
 
 # Integrate dm/dr equation for polytrope from r=0
-mMLE = [0.]
-for i, xii in enumerate(xi[1:], 1):
-    dxi= xii - xi[i-1]
-    mMLE.append(mMLE[i-1] + 4. * np.pi * dxi * alpha**3 * rho0 * (theta[i]**nnn * xii**2 + theta[i-1]**nnn * xi[i-1]**2) / 2.)
-
-#mprofile = [0.]
-#for i, ri in enumerate(rprofile[1:], 1):
-#    dr = ri - rprofile[i-1]
-#    mprofile.append(mprofile[i-1] + 4. * np.pi * dr * (rhoprofile[i] * ri**2 + rhoprofile[i-1] * rprofile[i-1]**2) / 2.)
-
-#mprofile = cumtrapz(4. * np.pi * rhoprofile * rprofile**2, rprofile, initial=0.)
+mMLE = cumtrapz(4. * np.pi * alpha**2 * xi**2 * rho0 * theta**nnn, alpha * xi, initial=0.)
 
 # Now integrate dm/dr equation from MLE solution from r=h with initial condition m(h) = m_c = m_MESA(h) to get m(r) profile
 mnew = [mh]

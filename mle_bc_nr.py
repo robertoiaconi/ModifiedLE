@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from scipy.integrate import cumtrapz
 from utils import phantom, ohlmann
 
 # Initialise physical constants
@@ -17,8 +18,9 @@ irho0max  = 100000 #max iterations to find rho0 to match BCs
 eps_alpha = 0.001  #sets tolerance of convergence condition on alpha--smaller eps is more precise
 eps2      = 0.0005 #sets fractional change in alpha after each iteration
 eps_rho0  = 0.001  #sets tolerance of convergence condition on rho0--smaller eps is more precise
-dt        = 2.e-4  #iteration dt
-p_dt      = 2.e-4  #profile dt
+eps_mc    = 0.001
+i_dt      = 2.e-4  #iteration dt
+p_dt      = 2.e-5  #profile dt
 tmin      = 1.e-10 #must start at finite value to avoid singularity
 
 # Initialise bc file
@@ -29,9 +31,10 @@ if not os.path.exists(os.path.dirname(output_file)):
 
 # Initialise physical parameters
 nnn          = 3     #polytropic index
-alpha_init   = 10.   #radius parameter
+alpha_init   = 5.87   #radius parameter
 rho0_init    = 0.0005 #central density, units g/cm^3
-m_c_over_m_h = 0.9446325
+mc_on_mh_min = 0.9
+mc_on_mh_max = 1.
 
 # Set the desired kernel
 kernel = phantom
@@ -45,11 +48,8 @@ def set_bc(bc_file, alpha):
     m_h      = float(bc_out[1])
     rho_h    = float(bc_out[2])
     drhodr_h = float(bc_out[3])
-    m_c      = m_c_over_m_h * m_h
-    rhobar   = 3. * m_c * g_Msun / (4. * np.pi * rcut**3 * cm_Rsun**3) #average density within r < h of central gravitating point mass in cgs units
-    xi_h     = rcut / alpha                                            #dimensionless softening length, = r_cutoff/alpha = h/alpha
 
-    return rcut, h, m_h, rho_h, drhodr_h, m_c, rhobar, xi_h
+    return rcut, h, m_h, rho_h, drhodr_h
 
 
 def pde(t, f, alpha, xi_h, nnn, rhobar, rho0):
@@ -106,44 +106,27 @@ def init_start(rho0, alpha):
 
     f = np.array([1., 0.]) #Initial conditions for integration
 
-
     return t, f, counter
 
-
-def write_rk(t, dt, f, counter, alpha, xi_h, rhobar, rho0):
-    with open('out/mle_profile.out', 'w+') as open_file:
-        for i in range(Nmax):
-            t, f, counter = rk3(t, dt, f, counter, alpha, xi_h, nnn, rhobar, rho0)
-            if np.isnan(f[0]):
-                print 'NaNs detected, change the time step'
-                exit()
-
-            xi        = t
-            theta     = f[0]
-            eta       = f[1]
-            dthetadxi = -eta / xi**2
-
-            u, chi, dchidu = kernel.kernel(alpha * xi)
-
-            open_file.write('{:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}\n'.format(xi, theta, dthetadxi, chi, dchidu))
-
-            if f[0] <= 0:
-                print 'reached negative theta at it = ', i
-                print 'xi = ', t
-                exit()
-            elif xi >= xi_h:
-                return t, f, counter
-
-
-def rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha):
+def eval_rk(alpha, rho0, xi_h, rhobar, write=False):
     t, f, counter = init_start(rho0, alpha)
     xi, theta, eta = np.array([t]), np.array([f[0]]), np.array([f[1]])
+    dt = i_dt
+    if write:
+        open_file = open(output_file, 'w+')
+        dt = p_dt
+
     for i in range(Nmax):
         t, f, counter = rk3(t, dt, f, counter, alpha, xi_h, nnn, rhobar, rho0)
 
         xi    = np.append(xi,t)
         theta = np.append(theta,f[0])
         eta   = np.append(eta,f[1])
+
+        if write:
+            dthetadxi = -eta[-1] / xi[-1]**2
+            u, chi, dchidu = kernel.kernel(alpha * xi[-1])
+            open_file.write('{:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}\n'.format(xi[-1], theta[-1], dthetadxi, chi, dchidu))
 
         if np.isnan(f[0]):
             print 'NaNs detected, change the time step'
@@ -155,6 +138,14 @@ def rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha):
             exit()
         elif xi[-1] >= xi_h:
             break
+    
+    if write:
+        open_file.close()
+
+    return xi, eta, theta
+
+def rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha):
+    xi, eta, theta = eval_rk(alpha, rho0, xi_h, rhobar)
 
     r = alpha * xi
     ircut = (np.abs(r-rcut)).argmin()
@@ -163,6 +154,7 @@ def rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha):
     drhodr = (rho - rhop) / (r[ircut] - r[ircut-1])  #This could probably be improved
     return rho, drhodr
 
+# Find how rho and drhodr vary as alpha varies around present value of alpha
 def drhodalpha(rcut, rhobar, nnn, rho0, alpha, xi_h):
     h_alpha = np.sqrt(sys.float_info.epsilon) * alpha
     rhon2, drhon2 = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha-2*h_alpha)
@@ -173,6 +165,7 @@ def drhodalpha(rcut, rhobar, nnn, rho0, alpha, xi_h):
     ddrho = (drhon2 - 8.*drhon1 + 8.*drhop1 - drhop2) / (12.*h_alpha)
     return drho, ddrho
 
+# Find how rho and drhodr vary as rho0 varies around present value of rho0
 def drhodrho0(rcut, rhobar, nnn, rho0, alpha, xi_h):
     h_rho0 = np.sqrt(sys.float_info.epsilon) * rho0
     rhon2, drhon2 = rhocut(rcut, rhobar, nnn, xi_h, rho0-2*h_rho0, alpha)
@@ -183,24 +176,27 @@ def drhodrho0(rcut, rhobar, nnn, rho0, alpha, xi_h):
     ddrho = (drhon2 - 8.*drhon1 + 8.*drhop1 - drhop2) / (12.*h_rho0)
     return drho, ddrho
 
+# Newton-Raphson with two variables, matching rho = rho_h and drhodr = drhodr_h
+def newton_raphson(alpha, rho0, rcut, rhobar, rho_h, drhodr_h):
 
-def mle_run(kernel):
-    alpha = alpha_init
-    rho0  = rho0_init
-    rcut, h, m_h, rho_h, drhodr_h, m_c, rhobar, xi_h = set_bc(bc_file, alpha)
-
-    kernel.set_hsoft(h)
+    # Initialise Jacobian
     J = np.array([[0.,0.],[0.,0.]])
-    for i in xrange(100):
+
+    for i in xrange(100): # 100 is arbitrary, but if it hasn't converged by then it likely won't
+
         xi_h = rcut / alpha
-        J[0][0], J[1][0] = drhodalpha(rcut, rhobar, nnn, rho0, alpha, xi_h)
-        J[0][1], J[1][1] = drhodrho0(rcut, rhobar, nnn, rho0, alpha, xi_h)
-        J = np.linalg.inv(J)
-        rho, drhodr = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha)
-        alpha = alpha - np.dot(J, [rho - rho_h, drhodr - drhodr_h])[0]
-        rho0 = rho0 - np.dot(J, [rho - rho_h, drhodr - drhodr_h])[1]
+        J[0][0], J[1][0] = drhodalpha(rcut, rhobar, nnn, rho0, alpha, xi_h) # J = [drho/dalpha    d^2rho/drdalpha]
+        J[0][1], J[1][1] = drhodrho0(rcut, rhobar, nnn, rho0, alpha, xi_h)  #     [drho/drho0     d^2rho/drdrho0 ]
+
+        J = np.linalg.inv(J) # Matrix inverse of J
+
+        rho, drhodr = rhocut(rcut, rhobar, nnn, xi_h, rho0, alpha)     # Find rho and drho/dr at the cut radius
+        alpha = alpha - np.dot(J, [rho - rho_h, drhodr - drhodr_h])[0] # Increment alpha based on gradients
+        rho0 = rho0 - np.dot(J, [rho - rho_h, drhodr - drhodr_h])[1]   # Increment rho0 based on gradients
+
         rho_check = abs((rho_h-rho) / rho)
         drhodr_check = abs((drhodr_h - drhodr) / drhodr)
+
         print '\n##### Iteration {} #####'.format(i)
         print 'alpha = {}'.format(alpha)
         print 'rho0  = {}'.format(rho0)
@@ -210,28 +206,75 @@ def mle_run(kernel):
         print 'Cut drhodr difference = {}'.format(drhodr_check)
 
         if (rho_check < 1e-9 and drhodr_check < 1e-9):
-            print 'Solution found'
             break
+    return alpha, rho0, xi_h
 
-    t, f, counter = init_start(rho0, alpha)
-    t, f, counter = write_rk(t, p_dt, f, counter, alpha, xi_h, rhobar, rho0)
 
-    xi        = t
-    theta     = f[0]
-    eta       = f[1]
-    dthetadxi = -eta / xi**2
+#Main function
+def mle_run(kernel):
+    # Initialise boundary conditions and initial guesses for alpha and rho0
+    alpha = alpha_init
+    rho0  = rho0_init
+    rcut, h, m_h, rho_h, drhodr_h = set_bc(bc_file, alpha)
 
-    print theta
+    # Set softening length of the kernel
+    kernel.set_hsoft(h)
 
+    # Guts of the code - use bisection root finder to iterate m_c until the cut mass matches m_h
+    alpha, rho0, xi_h, rhobar, c = bisection(alpha, rho0, m_h, rcut, rho_h, drhodr_h, mc_on_mh_min, mc_on_mh_max, eps_mc)
+    m_c = m_h * c
+
+    # Write out the final solution (uses a shorter dt, perhaps erroneously - need to check)
+    xi, eta, theta = eval_rk(alpha, rho0, xi_h, rhobar, write=True)
+
+    print '### Solution found ###'
     print 'rho0             = ', rho0
-    print 'rho_h/theta**nnn = ', rho_h / theta**nnn
+    print 'rho_h/theta**nnn = ', rho_h / theta[-1]**nnn
     print 'alpha            = ', alpha
 
     with open('out/param.out', 'w+') as open_file:
-            open_file.write('{:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}\n'.format(dt, nnn, xi_h, xi, rhobar, rho0, alpha, m_c))
+            open_file.write('{:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}\n'.format(p_dt, nnn, xi_h, xi[-1], rhobar, rho0, alpha, m_c))
 
     print "Completed run with no errors (we hope)!"
 
+
+# Determines mass at the cut radius and at the lower boundary for bisection method
+def mle_cut_mass(alpha, rho0, rhobar, rcut, rho_h, drhodr_h, m_h, a, c):
+
+    # Perform iteration to find alpha and rho0 for specific value of m_c
+    alpha, rho0, xi_h = newton_raphson(alpha, rho0, rcut, rhobar, rho_h, drhodr_h)
+
+    # Get xi and theta to determine MLE mass
+    xi, eta, theta = eval_rk(alpha, rho0, xi_h, rhobar)
+    alphacgs = alpha * cm_Rsun
+    mMLE = cumtrapz(4. * np.pi * alphacgs**2 * xi**2 * rho0 * theta**nnn, alphacgs * xi, initial=0.)
+
+    m_c_a = a * m_h + (mMLE[-1]/g_Msun) # Mass at cut radius if we use lower limit of mc_on_mh
+    m_c_c = c * m_h + (mMLE[-1]/g_Msun) # Mass at cut radius if we use middle value of mc_on_mh
+
+    m_criterion_a = (m_c_a - m_h) / m_h # Percentage difference between cut mass and m_h
+    m_criterion_c = (m_c_c - m_h) / m_h # if we use low and middle values of mc_on_mh, respectively
+
+    return alpha, rho0, xi_h, m_criterion_a, m_criterion_c
+
+# Bisection method for finding m_c such that, at the cut radius, mMLE + m_c = m_h
+def bisection(alpha, rho0, m_h, rcut, rho_h, drhodr_h, a, b, tol):
+    c = (a+b)/2.0 # Middle value of mc_on_mh
+    while (b-a)/2.0 > tol:
+        rhobar = 3. * m_h * c * g_Msun / (4. * np.pi * rcut**3 * cm_Rsun**3)
+
+        print "\nMass of core particle is between {} Msun and {} Msun.".format(m_h * a, m_h * b)
+
+        alpha, rho0, xi_h, m_criterion_a, m_criterion_c = mle_cut_mass(alpha, rho0, rhobar, rcut, rho_h, drhodr_h, m_h, a, c)
+
+        if m_criterion_c == 0: # We're exactly right!
+            return alpha, rho0, xi_h, rhobar, c
+        elif m_criterion_a * m_criterion_c < 0: # If the low and middle criteria are of differing signs (i.e. they bracket the zero value)
+            b = c                               # then bring the top mc_on_mh down to the middle value
+        else:                                   # else
+            a = c                               # bring the bottom value up to the top value
+        c = (a+b)/2.0
+    return alpha, rho0, xi_h, rhobar, c
 
 if __name__ == '__main__':
     mle_run(kernel)
