@@ -35,7 +35,7 @@ def read_mesa(in_file):
                 output_cols.update({cols[0] : (j,col_logged)})
                 break
         else:
-            print "Neither {} nor {} found in the input profile!".format(*cols)
+            print("Neither {} nor {} found in the input profile!".format(*cols))
             exit()
             #output_cols.update({cols[0] : (j,col_logged)})
 

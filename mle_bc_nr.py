@@ -83,12 +83,12 @@ def eval_rk(alpha, rho0, xi_h, rhobar, write=False, filename='out/generic.out'):
             open_file.write('{:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}\n'.format(xi[-1], theta[-1], dthetadxi, chi, dchidu))
 
         if np.isnan(f[0]):
-            print 'NaNs detected, change the time step'
+            print('NaNs detected, change the time step')
             exit()
 
         if f[0] <= 0:
-            print 'reached negative theta at it = ', i
-            print 'xi = ', t
+            print('reached negative theta at it = {}'.format(i))
+            print('xi = {}'.format(t))
             exit()
         elif xi[-1] >= xi_h:
             break
@@ -136,7 +136,7 @@ def newton_raphson(alpha, rho0, rcut, rhobar, rho_h, drhodr_h):
     # Initialise Jacobian
     J = np.array([[0.,0.],[0.,0.]])
 
-    for i in xrange(100): # 100 is arbitrary, but if it hasn't converged by then it likely won't
+    for i in range(100): # 100 is arbitrary, but if it hasn't converged by then it likely won't
 
         xi_h = rcut / alpha
         J[0][0], J[1][0] = drhodalpha(rcut, rhobar, nnn, rho0, alpha, xi_h) # J = [drho/dalpha    d^2rho/drdalpha]
@@ -151,13 +151,13 @@ def newton_raphson(alpha, rho0, rcut, rhobar, rho_h, drhodr_h):
         rho_check = abs((rho_h-rho) / rho)
         drhodr_check = abs((drhodr_h - drhodr) / drhodr)
 
-        print '\n##### Iteration {} #####'.format(i)
-        print 'alpha = {}'.format(alpha)
-        print 'rho0  = {}'.format(rho0)
-        print 'Desired cut values : rho = {}, drhodr = {}'.format(rho_h, drhodr_h)
-        print 'MLE cut values     : rho = {}, drhodr = {}'.format(rho, drhodr)
-        print 'Cut rho difference    = {}'.format(rho_check)
-        print 'Cut drhodr difference = {}'.format(drhodr_check)
+        print('\n##### Iteration {} #####'.format(i))
+        print('alpha = {}'.format(alpha))
+        print('rho0  = {}'.format(rho0))
+        print('Desired cut values : rho = {}, drhodr = {}'.format(rho_h, drhodr_h))
+        print('MLE cut values     : rho = {}, drhodr = {}'.format(rho, drhodr))
+        print('Cut rho difference    = {}'.format(rho_check))
+        print('Cut drhodr difference = {}'.format(drhodr_check))
 
         if (rho_check < 1e-9 and drhodr_check < 1e-9):
             break
@@ -207,7 +207,7 @@ def bisection(alpha, rho0, m_h, rcut, rho_h, drhodr_h, a, b, tol):
     while (b-a)/2.0 > tol:
         rhobar = 3. * m_h * c * g_Msun / (4. * np.pi * rcut**3 * cm_Rsun**3)
 
-        print "\nMass of core particle is between {} Msun and {} Msun.".format(m_h * a, m_h * b)
+        print("\nMass of core particle is between {} Msun and {} Msun.".format(m_h * a, m_h * b))
 
         alpha, rho0, xi_h, m_criterion_a, m_criterion_c = mle_cut_mass(alpha, rho0, rhobar, rcut, rho_h, drhodr_h, m_h, a, c)
 

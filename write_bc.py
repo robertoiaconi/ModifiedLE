@@ -57,10 +57,10 @@ with open('bc.out', 'w+') as open_file:
 '''
 def find_bc(profile, rc_input, cutoff_by_percentage):
     s    = read_mesa(profile)
-    r    = np.flip(s.radius,0)
-    m    = np.flip(s.mass,0)
-    rho  = np.flip(s.rho,0)
-    p    = np.flip(s.pressure,0)
+    r    = np.flipud(s.radius)
+    m    = np.flipud(s.mass)
+    rho  = np.flipud(s.rho)
+    p    = np.flipud(s.pressure)
 
     drhodr = np.gradient(rho,r)
     drhodr_smooth = smooth(drhodr)
@@ -78,7 +78,7 @@ def find_bc(profile, rc_input, cutoff_by_percentage):
     pc             = p[ic]
     drhodr_smoothc = drhodr_smooth[ic]
     dpdr_smoothc   = dpdr_smooth[ic]
-    print rc, mc, rhoc, drhodr_smoothc, pc, dpdr_smoothc
+
     return rc, mc, rhoc, drhodr_smoothc, pc, dpdr_smoothc
 
 

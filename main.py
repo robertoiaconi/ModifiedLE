@@ -20,12 +20,12 @@ xi, eta, theta = mle_bc_nr.eval_rk(alpha, rho0, xi_h, rhobar, write=True, filena
 
 rho_h = bcs[2]
 
-print '### Solution found ###'
-print 'rho0             = ', rho0
-print 'rho_h/theta**nnn = ', rho_h / theta[-1]**nnn
-print 'alpha            = ', alpha
+print('\n### Solution found ###')
+print('rho0             = {}'.format(rho0))
+print('rho_h/theta**nnn = {}'.format(rho_h / theta[-1]**nnn))
+print('alpha            = {}'.format(alpha))
 
-print "Completed run with no errors (we hope)!"
+print("Completed run with no errors (we hope)!")
 
 with open('out/{}'.format(param_filename), 'w+') as open_file:
         open_file.write('{:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}\n'.format(p_dt, nnn, xi_h, xi[-1], rhobar, rho0, alpha, m_c))
