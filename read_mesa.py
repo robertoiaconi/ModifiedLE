@@ -2,6 +2,7 @@
 import numpy as np
 import sys, os
 from collections import namedtuple
+import matplotlib.pyplot as plt
 
 def read_mesa(in_file):
     vals = []
@@ -20,30 +21,35 @@ def read_mesa(in_file):
                     except IndexError:
                         vals.append([float(ik)])
 
-    cols_to_keep = ['mass', 'radius', 'pressure', 'pgas_div_ptotal', 'logRho', 'energy'] 
+    cols_to_keep = [('mass', 'logM'), ('radius', 'logR'), ('pressure', 'logP'), ('rho', 'logRho'), ('energy', 'logE')] 
 
-    cols = []
+    output_cols = {}
 
-    for col in cols_to_keep:
+    for cols in cols_to_keep:
         for j, title in enumerate(titles):
-            if col == title:
-                cols.append(j)
+            if title in cols:
+                col_logged = False
+                if cols.index(title) == 1:
+                    col_logged = True
 
-    output_data = namedtuple('output_data', cols_to_keep)
+                output_cols.update({cols[0] : (j,col_logged)})
+                break
+        else:
+            print "Neither {} nor {} found in the input profile!".format(*cols)
+            exit()
+            #output_cols.update({cols[0] : (j,col_logged)})
 
-    output_vals = []
+    output_data = namedtuple('output_data', output_cols.keys())
 
-    for i, icol in enumerate(cols):
-        output_vals.append(vals[icol])
+    output_dict = {}
 
-    output_vals = np.array(output_vals)
+    for col, col_data in output_cols.items():
+        output_vals = np.array(vals[col_data[0]])
+        if col_data[1]:
+            output_vals = 10**output_vals
+        output_dict.update({col : output_vals})
 
-    output_data.mass = output_vals[0]
-    output_data.radius = output_vals[1]
-    output_data.pressure = output_vals[2]
-    output_data.pgas_div_ptotal = output_vals[3]
-    output_data.logRho = output_vals[4]
-    output_data.energy = output_vals[5]
+    output = output_data(**output_dict)
 
-    return output_data
+    return output
 

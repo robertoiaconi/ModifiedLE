@@ -3,54 +3,8 @@ import sys
 import numpy as np
 from scipy.integrate import cumtrapz
 from utils import phantom, ohlmann
-
-# Initialise physical constants
-s_Myr   = 1e6 * 365.25 * 24. * 3600.
-s_Gyr   = 1e9 * 365.25 * 24. * 3600.
-g_Msun  = 1.989e33
-cm_Rsun = 6.957e10
-cgs_G   = 6.6743e-8
-
-# Initialise timestepping parameters
-Nmax      = 100000 #max number of points
-ialphamax = 100000 #max iterations to find alpha to match BCs
-irho0max  = 100000 #max iterations to find rho0 to match BCs
-eps_alpha = 0.001  #sets tolerance of convergence condition on alpha--smaller eps is more precise
-eps2      = 0.0005 #sets fractional change in alpha after each iteration
-eps_rho0  = 0.001  #sets tolerance of convergence condition on rho0--smaller eps is more precise
-eps_mc    = 0.001
-i_dt      = 2.e-4  #iteration dt
-p_dt      = 2.e-5  #profile dt
-tmin      = 1.e-10 #must start at finite value to avoid singularity
-
-# Initialise bc file
-bc_file = 'bc.out'
-output_file = "out/mle_profile.out"
-if not os.path.exists(os.path.dirname(output_file)):
-    os.makedirs(os.path.dirname(output_file))
-
-# Initialise physical parameters
-nnn          = 3     #polytropic index
-alpha_init   = 5.87   #radius parameter
-rho0_init    = 0.0005 #central density, units g/cm^3
-mc_on_mh_min = 0.9
-mc_on_mh_max = 1.
-
-# Set the desired kernel
-kernel = phantom
-
-def set_bc(bc_file, alpha):
-    with open(bc_file,'r') as open_file:
-        bc_out = open_file.readline().split()
-	
-    rcut     = float(bc_out[0])
-    h        = rcut / kernel.radius
-    m_h      = float(bc_out[1])
-    rho_h    = float(bc_out[2])
-    drhodr_h = float(bc_out[3])
-
-    return rcut, h, m_h, rho_h, drhodr_h
-
+import write_bc
+from parameters import *
 
 def pde(t, f, alpha, xi_h, nnn, rhobar, rho0):
     xi        = t
@@ -108,12 +62,12 @@ def init_start(rho0, alpha):
 
     return t, f, counter
 
-def eval_rk(alpha, rho0, xi_h, rhobar, write=False):
+def eval_rk(alpha, rho0, xi_h, rhobar, write=False, filename='out/generic.out'):
     t, f, counter = init_start(rho0, alpha)
     xi, theta, eta = np.array([t]), np.array([f[0]]), np.array([f[1]])
     dt = i_dt
     if write:
-        open_file = open(output_file, 'w+')
+        open_file = open(filename, 'w+')
         dt = p_dt
 
     for i in range(Nmax):
@@ -211,11 +165,12 @@ def newton_raphson(alpha, rho0, rcut, rhobar, rho_h, drhodr_h):
 
 
 #Main function
-def mle_run(kernel):
+def mle_run(kernel, bcs):
     # Initialise boundary conditions and initial guesses for alpha and rho0
     alpha = alpha_init
     rho0  = rho0_init
-    rcut, h, m_h, rho_h, drhodr_h = set_bc(bc_file, alpha)
+    rcut, m_h, rho_h, drhodr_h, p_h, dpdr_h = bcs
+    h = rcut / kernel.radius
 
     # Set softening length of the kernel
     kernel.set_hsoft(h)
@@ -224,18 +179,7 @@ def mle_run(kernel):
     alpha, rho0, xi_h, rhobar, c = bisection(alpha, rho0, m_h, rcut, rho_h, drhodr_h, mc_on_mh_min, mc_on_mh_max, eps_mc)
     m_c = m_h * c
 
-    # Write out the final solution (uses a shorter dt, perhaps erroneously - need to check)
-    xi, eta, theta = eval_rk(alpha, rho0, xi_h, rhobar, write=True)
-
-    print '### Solution found ###'
-    print 'rho0             = ', rho0
-    print 'rho_h/theta**nnn = ', rho_h / theta[-1]**nnn
-    print 'alpha            = ', alpha
-
-    with open('out/param.out', 'w+') as open_file:
-            open_file.write('{:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}  {:10.8E}\n'.format(p_dt, nnn, xi_h, xi[-1], rhobar, rho0, alpha, m_c))
-
-    print "Completed run with no errors (we hope)!"
+    return alpha, xi_h, rho0, rhobar, m_c
 
 
 # Determines mass at the cut radius and at the lower boundary for bisection method
