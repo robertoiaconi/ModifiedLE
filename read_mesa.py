@@ -4,7 +4,7 @@ import sys, os
 from collections import namedtuple
 import matplotlib.pyplot as plt
 
-def read_mesa(in_file):
+def read_mesa_file(in_file):
     vals = []
 
     with open(in_file, 'r') as open_file:
@@ -21,7 +21,7 @@ def read_mesa(in_file):
                     except IndexError:
                         vals.append([float(ik)])
 
-    cols_to_keep = [('mass', 'logM'), ('radius', 'logR'), ('pressure', 'logP'), ('rho', 'logRho'), ('energy', 'logE')] 
+    cols_to_keep = [('mass', 'logM'), ('radius', 'logR'), ('pressure', 'logP'), ('rho', 'logRho'), ('energy', 'logE'), ('temperature', 'logT'), ('x_mass_fraction_H', ''), ('y_mass_fraction_He', ''), ('z_mass_fraction_metals', '')] 
 
     output_cols = {}
 
@@ -53,3 +53,38 @@ def read_mesa(in_file):
 
     return output
 
+
+def read_ivanova_file(in_file):
+    vals = []
+
+    with open(in_file, 'r') as open_file:
+        for num, line in enumerate(open_file, 1):
+            line_list = line.split()
+            for i, ik in enumerate(line_list):
+                try:
+                    vals[i].append(float(ik))
+                except IndexError:
+                    vals.append([float(ik)])
+
+    output_cols = ['radius', 'mass', 'entropy', 'energy', 'eth', 'enuc', 'enu', 'temperature', 'rho', 'pressure', 'ion_entropy', 'betab', 'x_mass_fraction_H', 'y_mass_fraction_He', 'z_mass_fraction_metals']
+
+    output_data = namedtuple('output_data', output_cols)
+
+    output_dict = {}
+
+    for col, col_name in enumerate(output_cols):
+        output_vals = np.flipud(np.array(vals[col]))
+        output_dict.update({output_cols[col] : output_vals})
+
+    output = output_data(**output_dict)
+
+    return output
+
+def read_mesa(in_file):
+    return read_mesa_file(in_file)
+
+if __name__ == "__main__":
+    x = read_ivanova_file("./ivanova_profile.data")
+    y = read_mesa_file("./P12_MESA_Profile.data")
+
+    print(x.radius,y.radius)
