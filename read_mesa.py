@@ -36,7 +36,11 @@ def read_mesa_file(in_file):
                 break
         else:
             print("Neither {} nor {} found in the input profile!".format(*cols))
-            exit()
+            if cols[0] == 'energy':
+                output_cols.update({cols[0]: None})
+            else:
+                exit()
+                
             #output_cols.update({cols[0] : (j,col_logged)})
 
     output_data = namedtuple('output_data', output_cols.keys())
@@ -44,8 +48,12 @@ def read_mesa_file(in_file):
     output_dict = {}
 
     for col, col_data in output_cols.items():
-        output_vals = np.array(vals[col_data[0]])
-        if col_data[1]:
+        if col_data is None:
+            output_val = np.zeros(len(vals[0]))
+        else:
+            output_vals = np.array(vals[col_data[0]])
+        
+        if col_data is not None and col_data[1]:
             output_vals = 10**output_vals
         output_dict.update({col : output_vals})
 
