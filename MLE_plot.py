@@ -38,7 +38,7 @@ drhodr_smooth = smooth(drhodr)
 dpdr         = np.gradient(p,r)
 dpdr_smooth  = smooth(dpdr)
 
-cut_radius *= 0.01 * r[-1] if cutoff_by_percentage else cm_Rsun
+cut_radius *= cm_Rsun
 
 h = cut_radius / kernel.radius
 kernel.set_hsoft(h)
