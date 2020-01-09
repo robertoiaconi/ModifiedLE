@@ -1,0 +1,1 @@
+# Class to contain alpha, rho0 etc.
