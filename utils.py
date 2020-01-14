@@ -1,5 +1,11 @@
 import numpy as np
 
+# Initialise physical constants
+g_Msun  = 1.989e33
+cm_Rsun = 6.957e10
+cgs_G   = 6.6743e-8
+
+
 def smooth(x,window_len=11,window='hanning'):
     if x.ndim != 1:
         raise ValueError("smooth only accepts 1 dimension arrays.")
@@ -32,9 +38,16 @@ def find_nearest(array,value):
     return idx
 
 class Kernel:
-    def __init__(self, radius, func):
+    def __init__(self, name, radius, func):
+        self.name = name
         self.radius = radius
         self.func   = func
+
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.name
 
     def set_hsoft(self, h):
         self.h = h
@@ -73,7 +86,7 @@ def phantom_kernel(r, h):
         dchidu = -3./u**4
     return u, chi, dchidu
 
-ohlmann = Kernel(1, ohlmann_kernel)
-phantom = Kernel(2, phantom_kernel)
+ohlmann = Kernel('ohlmann', 1, ohlmann_kernel)
+phantom = Kernel('phantom', 2, phantom_kernel)
 
 

@@ -4,9 +4,12 @@ from types import SimpleNamespace
 from copy import deepcopy
 import numpy as np
 from scipy.integrate import cumtrapz, solve_ivp
-from utils import phantom, ohlmann
-from parameters import *
+from utils import phantom, ohlmann, g_Msun, cm_Rsun, cgs_G
 from bisection import bisection
+
+# Initialise timestepping parameters
+n_steps   = 1000    # number of points to evaluate solution at
+tmin      = 1.e-10  # must start at finite value to avoid singularity
 
 def modified_lane_emden(t, y, mle_params):
     theta, eta = y
@@ -14,7 +17,7 @@ def modified_lane_emden(t, y, mle_params):
 
     dthetadxi = -eta/(xi**2)
 
-    u, chi, dchidu = kernel.kernel(mle_params.alpha * xi)
+    u, chi, dchidu = mle_params.kernel.kernel(mle_params.alpha * xi)
     
     dfdt0 = -eta / xi**2
     dfdt1 = xi**2 * (theta**mle_params.n + mle_params.rhobar / mle_params.rho0 * (chi + 1./3. * u * dchidu))
@@ -28,7 +31,7 @@ def zero_crossing(t, y):
 zero_crossing.terminal = True
 zero_crossing.direction = -1
 
-def eval_rk(mle_params, write=False, filename='out/generic.out'):
+def evaluate_mle(mle_params, write=False, filename='out/generic.out'):
     fun    = lambda t, y: modified_lane_emden(t, y, mle_params)
     t_span = (tmin, mle_params.xi_max)
     y0     = [1., 0.] #Initial conditions for integration
@@ -44,7 +47,7 @@ def eval_rk(mle_params, write=False, filename='out/generic.out'):
         dthetadxi = -eta / xi**2
         chi, dchidu = np.array([]), np.array([])
         for ixi in xi:
-            u, ichi, idchidu = kernel.kernel(mle_params.alpha * ixi)
+            u, ichi, idchidu = mle_params.kernel.kernel(mle_params.alpha * ixi)
             chi = np.append(chi,ichi)
             dchidu = np.append(dchidu, idchidu)
         sol_out = np.array([xi, theta, dthetadxi, chi, dchidu])
@@ -53,7 +56,7 @@ def eval_rk(mle_params, write=False, filename='out/generic.out'):
     return xi, eta, theta
 
 def rhocut(mle_params, BCs):
-    xi, eta, theta = eval_rk(mle_params)
+    xi, eta, theta = evaluate_mle(mle_params)
 
     r = mle_params.alpha * xi
     ic = (np.abs(r-BCs.r)).argmin()
@@ -96,7 +99,7 @@ def newton_raphson(mle_params, BCs):
 
     for i in range(100): # 100 is arbitrary, but if it hasn't converged by then it likely won't
 
-        mle_params.xi_h = kernel.radius * kernel.h / mle_params.alpha
+        mle_params.xi_h = mle_params.kernel.radius * mle_params.kernel.h / mle_params.alpha
         mle_params.xi_max = BCs.r / mle_params.alpha
 
         J[0][0], J[1][0] = drhodalpha(mle_params, BCs) # J = [drho/dalpha    d^2rho/drdalpha]
@@ -125,15 +128,13 @@ def newton_raphson(mle_params, BCs):
 
 
 #Main function
-def mle_run(kernel, BCs):
-    # Initialise simple container to bundle the parameters of the MLE
-    mle_params = SimpleNamespace(alpha = alpha_init, rho0 = rho0_init, n = nnn)
-
+def mle_run(mle_params, bisection_inputs, BCs):
     # Set softening length of the kernel
-    kernel.set_hsoft(BCs.r / kernel.radius)
+    mle_params.kernel.set_hsoft(BCs.r / mle_params.kernel.radius)
 
     # Guts of the code - use bisection root finder to iterate m_c until the cut mass matches m_h
-    mc_on_mh, mle_params = bisection(mc_on_mh_min, mc_on_mh_max, eps_mc, bisection_function, mle_params, BCs)
+    mc_on_mh, mle_params = bisection(bisection_inputs.mratio_min, bisection_inputs.mratio_max, bisection_inputs.tol,
+                                     bisection_function, mle_params, BCs)
 
     # The mass of the core particle consistent with the calculate MLE profile
     mle_params.mc = BCs.m * mc_on_mh
@@ -147,7 +148,7 @@ def mle_cut_mass(mle_params, BCs):
     mle_params = newton_raphson(mle_params, BCs)
 
     # Get xi and theta to determine MLE mass
-    xi, eta, theta = eval_rk(mle_params)
+    xi, eta, theta = evaluate_mle(mle_params)
     alphacgs = mle_params.alpha * cm_Rsun
     mle_mass = cumtrapz(4. * np.pi * alphacgs**2 * xi**2 * mle_params.rho0 * theta**mle_params.n, alphacgs * xi, initial=0.) / g_Msun
 
@@ -156,8 +157,6 @@ def mle_cut_mass(mle_params, BCs):
 def bisection_function(lower, upper, middle, mle_params, BCs):
     print("\nMass of core particle is between {} Msun and {} Msun.".format(BCs.m * lower, BCs.m * upper))
     mle_params.rhobar = 3. * BCs.m * middle * g_Msun / (4. * np.pi * BCs.r**3 * cm_Rsun**3)
-    #mle_params = kwargs['mle_params']
-    #BCs = kwargs['BCs']
 
     mle_mass, mle_params = mle_cut_mass(mle_params, BCs)
 
