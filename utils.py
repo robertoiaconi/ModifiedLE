@@ -1,9 +1,12 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Initialise physical constants
 g_Msun  = 1.989e33
 cm_Rsun = 6.957e10
 cgs_G   = 6.6743e-8
+cgs_kb  = 1.38e-16
+cgs_amu = 1.66e-24 
 
 
 def smooth(x,window_len=11,window='hanning'):
@@ -58,6 +61,26 @@ class Kernel:
         else:
             return self.func(r,self.h)
 
+    # This could do with some prettifying
+    def plot_kernel(self):
+        fig, axes = plt.subplots(1,2)
+
+        rs      = np.linspace(0, self.radius, 1000)
+        us      = np.array([])
+        chis    = np.array([])
+        dchidus = np.array([])
+
+        for r in rs:
+            u, chi, dchidu = self.kernel(r)
+            us = np.append(us,u)
+            chis = np.append(chis,chi)
+            dchidus = np.append(dchidus,dchidu)
+
+        axes[0].plot(rs, us*chis)
+        axes[1].plot(rs, chis + us / 3. * dchidus)
+        plt.show()
+
+
 def ohlmann_kernel(r, h):
     u = r / h
     if (u >= 0 and u < 0.5):
@@ -88,5 +111,4 @@ def phantom_kernel(r, h):
 
 ohlmann = Kernel('ohlmann', 1, ohlmann_kernel)
 phantom = Kernel('phantom', 2, phantom_kernel)
-
 

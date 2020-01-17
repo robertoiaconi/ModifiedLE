@@ -6,24 +6,20 @@ import matplotlib.pyplot as plt
 from utils import smooth, find_nearest
 
 def find_bc(profile, rc_input):
-    s    = read_mesa(profile)
-    r    = np.flipud(s.radius)
-    m    = np.flipud(s.mass)
-    rho  = np.flipud(s.rho)
-    p    = np.flipud(s.pressure)
+    s = read_mesa(profile)
 
-    drhodr = np.gradient(rho,r)
+    drhodr = np.gradient(s.rho,s.radius)
     drhodr_smooth = smooth(drhodr)
 
-    dpdr = np.gradient(p,r)
+    dpdr = np.gradient(s.pressure,s.radius)
     dpdr_smooth = smooth(dpdr)
 
-    ic = find_nearest(r, rc_input)
+    ic = find_nearest(s.radius, rc_input)
     bc = SimpleNamespace(
-        r = r[ic],
-        m = m[ic],
-        rho = rho[ic],
-        p = p[ic],
+        r = s.radius[ic],
+        m = s.mass[ic],
+        rho = s.rho[ic],
+        p = s.pressure[ic],
         drhodr = drhodr[ic],
         dpdr = dpdr[ic]
     )

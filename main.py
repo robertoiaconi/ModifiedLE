@@ -1,4 +1,3 @@
-import read_mesa
 import boundary_conditions
 import modified_lane_emden
 from input_file_utils import write_input_file, read_input_file

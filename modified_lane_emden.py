@@ -9,13 +9,11 @@ from bisection import bisection
 
 # Initialise timestepping parameters
 n_steps   = 1000    # number of points to evaluate solution at
-tmin      = 1.e-10  # must start at finite value to avoid singularity
+tmin      = 1.e-6  # must start at finite value to avoid singularity
 
 def modified_lane_emden(t, y, mle_params):
     theta, eta = y
     xi         = t
-
-    dthetadxi = -eta/(xi**2)
 
     u, chi, dchidu = mle_params.kernel.kernel(mle_params.alpha * xi)
     

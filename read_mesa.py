@@ -1,5 +1,6 @@
 import numpy as np
 import sys, os
+from types import SimpleNamespace
 from collections import namedtuple
 import matplotlib.pyplot as plt
 
@@ -42,21 +43,19 @@ def read_mesa_file(in_file):
                 
             #output_cols.update({cols[0] : (j,col_logged)})
 
-    output_data = namedtuple('output_data', output_cols.keys())
-
     output_dict = {}
 
     for col, col_data in output_cols.items():
         if col_data is None:
-            output_val = np.zeros(len(vals[0]))
+            output_vals = np.zeros(len(vals[0]))
         else:
             output_vals = np.array(vals[col_data[0]])
         
         if col_data is not None and col_data[1]:
             output_vals = 10**output_vals
-        output_dict.update({col : output_vals})
+        output_dict.update({col : np.flipud(output_vals)})
 
-    output = output_data(**output_dict)
+    output = SimpleNamespace(**output_dict)
 
     return output
 
@@ -75,15 +74,13 @@ def read_ivanova_file(in_file):
 
     output_cols = ['radius', 'mass', 'entropy', 'energy', 'eth', 'enuc', 'enu', 'temperature', 'rho', 'pressure', 'ion_entropy', 'betab', 'x_mass_fraction_H', 'y_mass_fraction_He', 'z_mass_fraction_metals']
 
-    output_data = namedtuple('output_data', output_cols)
-
     output_dict = {}
 
     for col, col_name in enumerate(output_cols):
-        output_vals = np.flipud(np.array(vals[col]))
+        output_vals = np.array(vals[col])
         output_dict.update({output_cols[col] : output_vals})
 
-    output = output_data(**output_dict)
+    output = SimpleNamespace(**output_dict)
 
     return output
 
