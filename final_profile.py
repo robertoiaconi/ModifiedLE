@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from collections import namedtuple
-from read_mesa import read_mesa
-from input_file_utils import read_input_file
-from utils import smooth, find_nearest, cm_Rsun, g_Msun, cgs_G, cgs_kb, cgs_amu
-from scipy.integrate import cumtrapz, simps
 import sys
 from types import SimpleNamespace
-import boundary_conditions
+from scipy.integrate import cumtrapz, simps
+
+from mle.read_mesa import read_mesa
+from mle.input_file_utils import read_input_file
+from mle.utils import smooth, find_nearest, cm_Rsun, g_Msun, cgs_G, cgs_kb, cgs_amu
+from mle.boundary_conditions import find_bc
 
 # Read in the profile filenames from the command line
 profile_file = sys.argv[1]
@@ -20,7 +20,7 @@ mle_input_file = profile_file.split('.')[0] + '.in'
 # Read inputs and data from MLE run
 xi, theta, dthetadxi, chi, dchidu = np.loadtxt(mle_output_file).T
 mle_params, _, cut_radius = read_input_file(mle_input_file)
-BCs = boundary_conditions.find_bc(profile_file, cut_radius)
+BCs = find_bc(profile_file, cut_radius)
 
 # Set kernel up correctly
 mle_params.kernel.set_hsoft(cut_radius / mle_params.kernel.radius)
