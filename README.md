@@ -116,6 +116,6 @@ where all units are CGS except for the point mass values at the top
 
 Happy simulating!
 
-[input1]: https://github.com/TomReichardt/ModifiedLE/tree/simplified/assets/input_tool_1.png "Adjust parameters as you see fit"
-[input2]: https://github.com/TomReichardt/ModifiedLE/tree/simplified/assets/input_tool_2.png "Looks pretty close"
-[output]: https://github.com/TomReichardt/ModifiedLE/tree/simplified/assets/output_tool_1.png "Look, it's not my best work"
+[input1]: https://github.com/TomReichardt/ModifiedLE/blob/simplified/assets/input_tool_1.png "Adjust parameters as you see fit"
+[input2]: https://github.com/TomReichardt/ModifiedLE/blob/simplified/assets/input_tool_2.png "Looks pretty close"
+[output]: https://github.com/TomReichardt/ModifiedLE/blob/simplified/assets/output_tool_1.png "Look, it's not my best work"
