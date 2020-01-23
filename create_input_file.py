@@ -70,13 +70,13 @@ line = plot_ax.axvline(state.BCs.r, color="k", linestyle="-.")
 
 # Create the slider axes
 axcolor = 'w'
-axalpha = fig.add_subplot(gs[10,0], facecolor=axcolor)
-axrho0 = fig.add_subplot(gs[12,0], facecolor=axcolor)
+axalpha = fig.add_subplot(gs[10,0], facecolor=axcolor, xscale='log')
+axrho0 = fig.add_subplot(gs[12,0], facecolor=axcolor, xscale='log')
 axn = fig.add_subplot(gs[8,0], facecolor=axcolor)
 
 # Create sliders
-salpha = Slider(axalpha, '$\\alpha$', 0.5, 20.0, valinit=state.mle_params.alpha, color='steelblue')
-srho0 = Slider(axrho0, '$\\rho_0$', 0.0, 0.1, valinit=state.mle_params.rho0, color='steelblue')
+salpha = Slider(axalpha, '$\\alpha$', 0.1, 100., valinit=state.mle_params.alpha, valfmt='%1.1e', color='steelblue')
+srho0 = Slider(axrho0, '$\\rho_0$', 0.00001, 10.0, valinit=state.mle_params.rho0, valfmt='%1.1e', color='steelblue')
 sn = Slider(axn, '$n$', 0.0, 5.0, valinit=state.mle_params.n, valstep=0.5, color='steelblue')
 
 # Update plot based on new values
