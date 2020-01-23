@@ -60,19 +60,19 @@ plot_ax = fig.add_subplot(gs[:,1])
 
 # Plot the input profile
 s = read_mesa(input_file)
-plot_ax.loglog(s.radius, s.rho)
+plot_ax.loglog(s.radius, s.rho, label='MESA Profile')
 
 # Plot the initial MLE solution
-l, = plot_ax.loglog(r, rho)
+l, = plot_ax.loglog(r, rho, label='MLE Solution')
 
 # Plot the cut radius as a vertical line
 line = plot_ax.axvline(state.BCs.r, color="k", linestyle="-.")
 
 # Create the slider axes
-axcolor = 'lightsteelblue'
-axalpha = fig.add_subplot(gs[6,0], facecolor=axcolor)
-axrho0 = fig.add_subplot(gs[8,0], facecolor=axcolor)
-axn = fig.add_subplot(gs[10,0], facecolor=axcolor)
+axcolor = 'w'
+axalpha = fig.add_subplot(gs[10,0], facecolor=axcolor)
+axrho0 = fig.add_subplot(gs[12,0], facecolor=axcolor)
+axn = fig.add_subplot(gs[8,0], facecolor=axcolor)
 
 # Create sliders
 salpha = Slider(axalpha, '$\\alpha$', 0.5, 20.0, valinit=state.mle_params.alpha, color='steelblue')
@@ -111,8 +111,8 @@ srho0.on_changed(update_rho0)
 sn.on_changed(update_n)
 
 # Cut radius textbox
-cutrax = fig.add_subplot(gs[12,0])
-textbox = TextBox(cutrax, '$r_\mathrm{cut}$', initial=str(state.cut_radius))
+cutrax = fig.add_subplot(gs[6,0])
+textbox = TextBox(cutrax, '$r_\mathrm{cut}$', initial=str(state.cut_radius), color=axcolor)
 
 def update_cut_radius(val):
     try:
@@ -138,4 +138,6 @@ click_func = lambda event: write_input_file(input_file, state.mle_params, state.
 button.on_clicked(click_func)
 
 # Self-explanatory
+handles, labels = plot_ax.get_legend_handles_labels()
+plot_ax.legend(handles, labels, loc=1)
 plt.show()
