@@ -134,7 +134,11 @@ textbox.on_submit(update_cut_radius)
 # Write file button
 writeax = fig.add_subplot(gs[14,0])
 button = Button(writeax, 'Write file', color=axcolor, hovercolor='0.975')
-click_func = lambda event: write_input_file(input_file, state.mle_params, state.bisection_inputs, state.cut_radius)
+def click_func(event):
+    state.mle_params.mc = None
+    state.mle_params.xi_max = None
+    state.mle_params.rhobar = None
+    write_input_file(input_file, state.mle_params, state.bisection_inputs, state.cut_radius)
 button.on_clicked(click_func)
 
 # Self-explanatory
