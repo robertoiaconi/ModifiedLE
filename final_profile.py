@@ -111,7 +111,7 @@ mle_profile.rho = MLE_density(mle_params.rho0, theta, mle_params.n)
 full_profile.rho = np.concatenate((mle_profile.rho, cut_profile.rho))
 
 mle_profile.m = MLE_mass(mle_profile.r, mle_profile.rho)
-full_profile.m = np.concatenate((mle_profile.m + mle_params.mc, cut_profile.m))
+full_profile.m = np.concatenate((mle_profile.m, cut_profile.m))
 
 mle_profile.drhodr = MLE_drhodr(mle_profile.rho, mle_params.alpha, mle_params.n, theta, dthetadxi)
 full_profile.drhodr = np.concatenate((mle_profile.drhodr, cut_profile.drhodr))
@@ -147,7 +147,7 @@ axes[1].plot(full_profile.r, -full_profile.drhodr)
 axes[1].axhline(-BCs.drhodr, color = 'k', dashes = [3,5])
 
 axes[2].plot(s.radius, s.mass)
-axes[2].plot(full_profile.r, full_profile.m)
+axes[2].plot(full_profile.r, full_profile.m + mle_params.mc)
 axes[2].axhline(BCs.m, color = 'k', dashes = [3,5])
 
 axes[3].plot(s.radius, s.pressure)
