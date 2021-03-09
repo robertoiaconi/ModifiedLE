@@ -1,6 +1,6 @@
 # Modified Lane-Emden Equation Solver
 
-This project is an implementation of the modified Lane-Emden equation method laid out by [Ohlmann et al. (2017)](https://www.aanda.org/articles/aa/abs/2017/03/aa29692-16/aa29692-16.html). It reconstructs the core of a stellar profile within a specified radius such that it is consistent with having the core condensed into a point mass with softened gravitational potential.
+This project is an implementation of the modified Lane-Emden equation method laid out by [Ohlmann et al. (2017)](https://ui.adsabs.harvard.edu/abs/2017A%26A...599A...5O/abstract). It reconstructs the core of a stellar profile within a specified radius such that it is consistent with having the core condensed into a point mass with softened gravitational potential. This version of the code uses the tabulated equation of state from the 1D stellar evolution code MESA by [Paxton et a. (2011)] (https://ui.adsabs.harvard.edu/abs/2011ApJS..192....3P/abstract) to reconstruct the necessary thermodynamic quantities.
 
 ## Requirements
 Python 3.7 or higher
@@ -10,6 +10,8 @@ virtualenv
 Git
 
 gfort2py (https://github.com/rjfarmer/gfort2py)
+
+MESA
 
 pyMesa (https://github.com/rjfarmer/pyMesa)
 
@@ -118,6 +120,8 @@ Press the 'Write file' button, and then close the plot window. You should have a
 ```
 
 The `null`s are intentionally there to avoid potential confusion, as they are calculated within the main script
+
+All the MESA equation of state parameters, i.e., `species`, `chem_id`s and `net_iso`s, are default values and you should replace them with those in your profile, in this case the file test_profile.data, before moving to the next step
 
 You are now free to run the MLE solver!
 
