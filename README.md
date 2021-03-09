@@ -1,6 +1,6 @@
 # Modified Lane-Emden Equation Solver
 
-This project is an implementation of the modified Lane-Emden equation method laid out by [Ohlmann et al. (2017)](https://ui.adsabs.harvard.edu/abs/2017A%26A...599A...5O/abstract). It reconstructs the core of a stellar profile within a specified radius such that it is consistent with having the core condensed into a point mass with softened gravitational potential. This version of the code uses the tabulated equation of state from the 1D stellar evolution code MESA by [Paxton et a. (2011)] (https://ui.adsabs.harvard.edu/abs/2011ApJS..192....3P/abstract) to reconstruct the necessary thermodynamic quantities.
+This project is an implementation of the modified Lane-Emden equation method laid out by [Ohlmann et al. (2017)](https://ui.adsabs.harvard.edu/abs/2017A%26A...599A...5O/abstract). It reconstructs the core of a stellar profile within a specified radius such that it is consistent with having the core condensed into a point mass with softened gravitational potential. This version of the code uses the tabulated equation of state from the 1D stellar evolution code MESA by [Paxton et a. (2011)](https://ui.adsabs.harvard.edu/abs/2011ApJS..192....3P/abstract) to reconstruct the necessary thermodynamic quantities.
 
 ## Requirements
 Python 3.7 or higher
