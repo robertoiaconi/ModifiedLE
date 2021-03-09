@@ -9,6 +9,10 @@ virtualenv
 
 Git
 
+gfort2py (https://github.com/rjfarmer/gfort2py)
+
+pyMesa (https://github.com/rjfarmer/pyMesa)
+
 ## Installation
 
 Clone a copy of this repo by running the command `git clone https://github.com/TomReichardt/ModifiedLE.git`
