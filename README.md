@@ -27,6 +27,8 @@ Start the new virtual environment with `venv\Scripts\activate.bat` (Windows) or 
 
 Once the virtual environment is running, use `pip install -r requirements.txt`
 
+Install MESA, gfort2py and pyMesa, in this order, by follwing the instructions written in the respective websites
+
 ## Usage
 
 Copy your MESA profile into a new directory within ModifiedLE_MESAEoS/profiles/ (for example, I have a MESA profile called test_profile.data, hence I copy it into ModifiedLE_MESAEoS/profiles/test_profile/)
