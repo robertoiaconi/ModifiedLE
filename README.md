@@ -15,7 +15,7 @@ pyMesa (https://github.com/rjfarmer/pyMesa)
 
 ## Installation
 
-Clone a copy of this repo by running the command `git clone https://github.com/TomReichardt/ModifiedLE.git`
+Clone a copy of this repo by running the command `git clone https://github.com/robertoiaconi/ModifiedLE_MESAEoS.git`
 
 Change to the new ModifiedLE directory, `cd ModifiedLE`
 
@@ -49,20 +49,71 @@ Press the 'Write file' button, and then close the plot window. You should have a
 ```
 {
     "mle_params": {
-        "alpha": 1.4225806451612897,
-        "rho0": 0.061505376344086024,
-        "n": 3,
+        "alpha": 4.363650352681207,
+        "rho0": 0.015575837407081461,
+        "n": 3.0,
         "kernel": "phantom",
         "xi_max": null,
         "mc": null,
-        "rhobar": null
+        "rhobar": null,
     },
     "bisection_inputs": {
         "tol": 1e-05,
         "mratio_min": 0.2,
         "mratio_max": 0.99
     },
-    "cut_radius": 1
+    "cut_radius": 8.0,
+    "mesa_eos_params": {
+        "species": 22,
+        "chem_id": [
+            "ineut",
+            "ih1",
+            "iprot",
+            "ihe3",
+            "ihe4",
+            "ic12",
+            "in14",
+            "io16",
+            "ine20",
+            "img24",
+            "isi28",
+            "is32",
+            "iar36",
+            "ica40",
+            "iti44",
+            "icr48",
+            "icr60",
+            "ife52",
+            "ife54",
+            "ife56",
+            "ico56",
+            "ini56"
+        ],
+        "net_iso": [
+            "ineut",
+            "ih1",
+            "iprot",
+            "ihe3",
+            "ihe4",
+            "ic12",
+            "in14",
+            "io16",
+            "ine20",
+            "img24",
+            "isi28",
+            "is32",
+            "iar36",
+            "ica40",
+            "iti44",
+            "icr48",
+            "icr60",
+            "ife52",
+            "ife54",
+            "ife56",
+            "ico56",
+            "ini56"
+        ]
+    }
 }
 ```
 
