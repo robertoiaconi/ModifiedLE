@@ -19,7 +19,7 @@ pyMesa (https://github.com/rjfarmer/pyMesa)
 
 Clone a copy of this repo by running the command `git clone https://github.com/robertoiaconi/ModifiedLE_MESAEoS.git`
 
-Change to the new ModifiedLE directory, `cd ModifiedLE`
+Change to the new ModifiedLE directory, `cd ModifiedLE_MESAEoS`
 
 Create a virtual environment with `virtualenv venv`
 
@@ -29,7 +29,7 @@ Once the virtual environment is running, use `pip install -r requirements.txt`
 
 ## Usage
 
-Copy your MESA profile into a new directory within ModifiedLE/profiles/ (for example, I have a MESA profile called test_profile.data, hence I copy it into ModifiedLE/profiles/test_profile/)
+Copy your MESA profile into a new directory within ModifiedLE_MESAEoS/profiles/ (for example, I have a MESA profile called test_profile.data, hence I copy it into ModifiedLE_MESAEoS/profiles/test_profile/)
 
 ### Creating an input file
 
@@ -157,18 +157,18 @@ Admittedly, there could be some work done to improve this screen, but hopefully 
 The script will have produced a new profile at the specified location, which looks something like
 
 ```
-# This profile has been constructed to have a point mass core of m_c = 0.258 Msun, and a softening length of h_soft = 0.5 Rsun.
+# This profile has been constructed to have a point mass core of m_c = 7.269 Msun, and a softening length of h_soft = 4.0 Rsun.
 # [    Mass    ]  [  Pressure  ]  [Temperature ]  [   Radius   ]  [  Density   ]  [   E_int    ]
-  1.96084721E+33  5.67400158E+03  1.99498040E+03  7.03582414E+11  2.02738412E-08  4.17713594E+11
-  1.96084721E+33  5.67406919E+03  1.99498337E+03  7.03582406E+11  2.02740525E-08  4.17714217E+11
-  1.96084721E+33  5.67419402E+03  1.99498886E+03  7.03582388E+11  2.02744427E-08  4.17715367E+11
-  1.96084721E+33  5.67437605E+03  1.99499687E+03  7.03582359E+11  2.02750118E-08  4.17717045E+11
-  1.96084721E+33  5.67468811E+03  1.99501061E+03  7.03582320E+11  2.02759872E-08  4.17719920E+11
-  1.96084721E+33  5.67528623E+03  1.99503693E+03  7.03582243E+11  2.02778568E-08  4.17725431E+11
-  1.96084721E+33  5.67632644E+03  1.99508271E+03  7.03582097E+11  2.02811081E-08  4.17735017E+11
-  1.96084721E+33  5.67814681E+03  1.99516284E+03  7.03581855E+11  2.02867974E-08  4.17751794E+11
-  1.96084721E+33  5.68087738E+03  1.99528306E+03  7.03581418E+11  2.02953301E-08  4.17776966E+11
-  1.96084721E+33  5.68542833E+03  1.99548350E+03  7.03580836E+11  2.03095485E-08  4.17818935E+11
+  1.97944099E+34  4.27375421E+02  3.38829688E+03  5.56718957E+13  1.97218305E-09  1.82378231E+12
+  1.97944099E+34  4.27375422E+02  3.38829688E+03  5.56718957E+13  1.97218305E-09  1.82378231E+12
+  1.97944099E+34  4.27375424E+02  3.38829688E+03  5.56718957E+13  1.97218307E-09  1.82378231E+12
+  1.97944099E+34  4.27375433E+02  3.38829688E+03  5.56718957E+13  1.97218310E-09  1.82378231E+12
+  1.97944099E+34  4.27375460E+02  3.38829688E+03  5.56718957E+13  1.97218321E-09  1.82378231E+12
+  1.97944099E+34  4.27375554E+02  3.38829688E+03  5.56718956E+13  1.97218359E-09  1.82378231E+12
+  1.97944099E+34  4.27375747E+02  3.38829710E+03  5.56718955E+13  1.97218437E-09  1.82378233E+12
+  1.97944099E+34  4.27376087E+02  3.38829740E+03  5.56718954E+13  1.97218574E-09  1.82378236E+12
+  1.97944099E+34  4.27376638E+02  3.38829796E+03  5.56718951E+13  1.97218796E-09  1.82378242E+12
+  1.97944098E+34  4.27377697E+02  3.38829902E+03  5.56718946E+13  1.97219223E-09  1.82378254E+12
   ...
 ```
 where all units are CGS except for the point mass values at the top
